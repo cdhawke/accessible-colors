@@ -1,7 +1,7 @@
 {
-  "name": "create-accessible-colors",
+  "name": "accessible-colors",
   "version": "1.0.1",
-  "description": "Typescript template for creating and publishing with rollup, typescript, jest, eslint, prettier, and husky",
+  "description": "Utility functions for working with colors in adherence to WCAG 2.1 guidelines.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/index.d.ts",
@@ -12,22 +12,26 @@
   "scripts": {
     "build": "rollup -c",
     "format": "prettier --write 'src/**/*'",
-    "build-production": "PRODUCTION=true npm run build",
+    "build-production": "PRODUCTION=true yarn run build",
     "lint": "eslint --fix 'src/**/*.ts'",
     "test": "jest",
     "prepare": "husky install",
-    "prepublishOnly": "npm run build-production && npm version patch"
+    "prepublishOnly": "yarn run build-production && yarn version patch"
   },
   "repository": "git+https://github.com/cdhawke/accessible-colors.git",
   "keywords": [
-    "typescript",
-    "template",
-    "package",
-    "eslint",
-    "rollup",
-    "jest",
-    "husky",
-    "prettier"
+    "wcag",
+    "wcag-2.1",
+    "accessibility",
+    "accessible",
+    "color",
+    "colors",
+    "contrast",
+    "contrast-ratio",
+    "luminance",
+    "luminosity",
+    "suggestion",
+    "generator"
   ],
   "author": "Christopher Hawke (https://github.com/cdhawke)",
   "license": "MIT",
