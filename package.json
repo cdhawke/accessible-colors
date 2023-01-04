@@ -16,7 +16,7 @@
     "lint": "eslint --fix 'src/**/*.ts'",
     "test": "jest",
     "prepare": "husky install",
-    "prepublishOnly": "yarn run build-production && yarn version patch"
+    "prepublishOnly": "yarn run build-production"
   },
   "repository": "git+https://github.com/cdhawke/accessible-colors.git",
   "keywords": [
