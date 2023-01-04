@@ -1,5 +1,4 @@
-import { hexToHsl, hexToRgb, hslToHex } from './helpers';
-import { HSL } from './types';
+import { hexToRgb, suggestColorVariant } from './helpers';
 
 /**
  * Original luminance function (used here, WCAG2.0 standard):
@@ -31,8 +30,9 @@ export const getLuminance = (color: string) => {
  * Produces a contrast ratio between two colors between 1 and 21. This
  * is expressed as 1:1 - 21:1, where contrast of 4.5:1 is considered
  * to be the minimum for normal text and 3:1 for large text.
- * @param color1
- * @param color2
+ * @param color1 - first color to compare in hex format (e.g. #000000)
+ * @param color2 - second color to compare in hex format (e.g. #ffffff)
+ * @param precision - number of decimal places to round to
  * @returns
  */
 export const getContrast = (
@@ -56,6 +56,25 @@ export const getContrast = (
 };
 
 /**
+ * isContrasting returns true if the constrast ratio between two specified colors is at least the specified ratio.
+ * @param color1 - first color to compare in hex format (e.g. #000000)
+ * @param color2 - second color to compare in hex format (e.g. #ffffff)
+ * @param ratio - the contrast ratio to compare against. Should be between 1 and 21
+ * @returns - true if the contrast ratio is at least the specified ratio
+ */
+export const isContrasting = (
+  color1: string,
+  color2: string,
+  ratio: number
+) => {
+  const contrast = getContrast(color1, color2);
+  if (!contrast) {
+    return null;
+  }
+  return contrast >= ratio;
+};
+
+/**
  * isAAContrast returns true if the constrast ratio between two specified colors satisfies the WCAG 2.0 AA standard
  * @link https://www.w3.org/WAI/GL/UNDERSTANDING-WCAG20/visual-audio-contrast7.html
  * @param color1 - first color to compare in hex format (e.g. #000000)
@@ -64,11 +83,7 @@ export const getContrast = (
  * @returns - true if the contrast ratio is at least 4.5:1 (normal text) or 3:1 (large text)
  */
 export const isAAContrast = (color1: string, color2: string, large = false) => {
-  const contrast = getContrast(color1, color2);
-  if (!contrast) {
-    return null;
-  }
-  return contrast >= (large ? 3 : 4.5);
+  return isContrasting(color1, color2, large ? 3 : 4.5);
 };
 
 /**
@@ -84,10 +99,13 @@ export const isAAAContrast = (
   color2: string,
   large = false
 ) => {
-  const contrast = getContrast(color1, color2);
-  return contrast && contrast >= (large ? 4.5 : 7.5);
+  return isContrasting(color1, color2, large ? 4.5 : 7);
 };
 
+/**
+ * randomColor will return a random color in hex format (e.g. `'#000000'`)
+ * @returns a random color in hex format (e.g. `'#000000'`)
+ */
 export const randomColor = () => {
   const hex = Math.floor(Math.random() * 16777215).toString(16);
   return `#${hex.padStart(6, '0')}`;
@@ -96,16 +114,15 @@ export const randomColor = () => {
 /**
  * getRandomAAColor will return a random color that is accessible based on the
  * WCAG 2.0 AA standard, which requires a contrast ratio of at least 4.5:1.
- * @param background - The background color to use for the contrast ratio calculation.
- * @param large - Whether the text should be considered large, adjusting the contrast ratio requirement to 3:1.
- * @returns A random color that is accessible based on the WCAG 2.0 AA standard.
+ * @param background - the background color to use for the contrast ratio calculation.
+ * @param large - whether the text should be considered large, adjusting the contrast ratio requirement to 3:1.
+ * @returns a random color that is accessible based on the WCAG 2.0 AA standard.
  */
 export const getRandomAAColor = (background: string, large = false): string => {
   let color = randomColor();
   while (!isAAContrast(background, color, large)) {
     color = randomColor();
   }
-
   return color;
 };
 
@@ -113,9 +130,9 @@ export const getRandomAAColor = (background: string, large = false): string => {
  * getRandomAAAColor will return a random color that is accessible based on the
  * WCAG 2.0 AAA standard, which requires a contrast ratio of at least 7:1. It will
  * take into account the luminance of the background color (hash).
- * @param background - The background color to use for the contrast ratio calculation.
- * @param large - Whether the text should be considered large, adjusting the contrast ratio requirement to 4.5:1.
- * @returns A random color that is accessible based on the WCAG 2.0 AAA standard.
+ * @param background - the background color to use for the contrast ratio calculation.
+ * @param large - whether the text should be considered large, adjusting the contrast ratio requirement to 4.5:1.
+ * @returns a random color that is accessible based on the WCAG 2.0 AAA standard.
  */
 export const getRandomAAAColor = (
   background: string,
@@ -129,127 +146,32 @@ export const getRandomAAAColor = (
   return color;
 };
 
-const getFontSize = (el: HTMLElement) => {
-  const style = window.getComputedStyle(el);
-  return parseFloat(style.fontSize);
-};
-
-const getBackgroundColor = (el: HTMLElement) => {
-  const style = window.getComputedStyle(el);
-  return style.backgroundColor;
-};
-
-const getTextColor = (el: HTMLElement) => {
-  const style = window.getComputedStyle(el);
-  return style.color;
-};
-
 /**
- * binarySearchContrast will run a binary search to find the closest accessible color
- * @param change
- * @param fixed
- */
-const binarySearchContrast = (
-  change: HSL,
-  fixed: HSL,
-  direction: 'lighten' | 'darken',
-  contrastFn: (c: string, f: string, l?: boolean) => boolean | null,
-  large?: boolean
-) => {
-  const { l, ...hs } = change;
-
-  let max = direction === 'lighten' ? 1 : l;
-  let min = direction === 'lighten' ? l : 0;
-
-  let minColor: string = hslToHex({ ...hs, l: min });
-  let maxColor: string = hslToHex({ ...hs, l: max });
-  const fixedHex = hslToHex(fixed);
-
-  // If the contrast at the minimum or maximum is unacceptable, then it's not worth
-  // the time to check.
-  if (
-    !contrastFn(direction === 'lighten' ? maxColor : minColor, fixedHex, large)
-  ) {
-    return null;
-  }
-
-  let prevMin: string | null = null;
-  let prevMax: string | null = null;
-
-  while (minColor !== prevMin || maxColor !== prevMax) {
-    prevMin = minColor;
-    prevMax = maxColor;
-
-    const adjusted = (min + max) / 2;
-
-    const stringified = hslToHex({ ...hs, l: adjusted });
-    if (direction === 'lighten') {
-      if (!contrastFn(stringified, fixedHex, large)) {
-        min = adjusted;
-        minColor = hslToHex({ ...hs, l: adjusted });
-      } else {
-        max = adjusted;
-        maxColor = hslToHex({ ...hs, l: adjusted });
-      }
-    }
-    if (direction === 'darken') {
-      if (!contrastFn(stringified, fixedHex, large)) {
-        max = adjusted;
-        maxColor = hslToHex({ ...hs, l: adjusted });
-      } else {
-        min = adjusted;
-        minColor = hslToHex({ ...hs, l: adjusted });
-      }
-    }
-  }
-
-  return hexToHsl(direction === 'lighten' ? maxColor : minColor);
-};
-
-/**
- * suggestAAColor will return a close accessible color to the specified colors.
- * @param colorToChange - the color we want to find a close accessible color for
- * @param colorToKeep - the color we want to keep the contrast ratio with
- * @returns - a close accessible color to the specified color to change relative to the color to keep,
- * or null if no accessible color can be found.
+ * suggestAAColor will return a close accessible color to the specified color with WCAG AA compatibility.
+ * @param colorToChange - the color we want to find a close accessible color for.
+ * @param colorToKeep - the color we want to keep the contrast ratio with.
+ * @param large - whether the text should be considered large, adjusting the contrast ratio requirement to 3:1.
+ * @returns a close accessible color to the specified `colorToChange` relative to the `colorToKeep`, or `null` if no accessible color can be found.
  */
 export const suggestAAColorVariant = (
   colorToChange: string,
   colorToKeep: string,
   large?: boolean
 ): string | null => {
-  const hslChange = hexToHsl(colorToChange);
-  const hslKeep = hexToHsl(colorToKeep);
-  if (!hslKeep || !hslChange) {
-    return null;
-  }
-  if (isAAContrast(colorToChange, colorToKeep, large)) {
-    return colorToChange;
-  }
-  const darker = binarySearchContrast(
-    hslChange,
-    hslKeep,
-    'darken',
-    isAAContrast,
-    large
-  );
-  const lighter = binarySearchContrast(
-    hslChange,
-    hslKeep,
-    'lighten',
-    isAAContrast,
-    large
-  );
-  if (darker !== null && lighter !== null) {
-    const darkerDiff = Math.abs(hslChange.l - darker.l);
-    const lighterDiff = Math.abs(hslChange.l - lighter.l);
-    return hslToHex(darkerDiff < lighterDiff ? darker : lighter);
-  }
-  if (darker === null && lighter !== null) {
-    return hslToHex(lighter);
-  }
-  if (lighter === null && darker !== null) {
-    return hslToHex(darker);
-  }
-  return null;
+  return suggestColorVariant(colorToChange, colorToKeep, isAAContrast, large);
+};
+
+/**
+ * suggestAAAColor will return a close accessible color to the specified color with WCAG AAA compatibility.
+ * @param colorToChange - the color we want to find a close accessible color for.
+ * @param colorToKeep - the color we want to keep the contrast ratio with.
+ * @param large - whether the text should be considered large, adjusting the contrast ratio requirement to 4.5:1.
+ * @returns a close accessible color to the specified `colorToChange` relative to the `colorToKeep`, or `null` if no accessible color can be found.
+ */
+export const suggestAAAColorVariant = (
+  colorToChange: string,
+  colorToKeep: string,
+  large?: boolean
+): string | null => {
+  return suggestColorVariant(colorToChange, colorToKeep, isAAAContrast, large);
 };
