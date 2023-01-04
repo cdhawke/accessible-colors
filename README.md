@@ -2,6 +2,20 @@
 
 Utility functions for generating and interacting with colors based on WCAG 2.1 [minimum](https://www.w3.org/TR/WCAG21/#contrast-minimum) and [enhanced](https://www.w3.org/TR/WCAG21/#contrast-enhanced) contrast guidelines.
 
+- [accessible-colors](#accessible-colors)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [`randomColor`](#randomcolor)
+    - [`getLuminance`](#getluminance)
+    - [`getContrast`](#getcontrast)
+    - [`isContrasting`](#iscontrasting)
+    - [`getRandomAAColor`](#getrandomaacolor)
+    - [`getRandomAAAColor`](#getrandomaaacolor)
+    - [`isAAContrast`](#isaacontrast)
+    - [`isAAAContrast`](#isaaacontrast)
+    - [`suggestAAColorVariant`](#suggestaacolorvariant)
+    - [`suggestAAAColorVariant`](#suggestaaacolorvariant)
+
 ## Installation
 
 ```sh
@@ -41,6 +55,15 @@ Retrieve the [contrast ratio](https://www.w3.org/TR/WCAG20/#contrast-ratiodef) b
 const contrastRatio: number = getContrast('#00FF33', '#FFFFFF'); // 1.368 contrast ratio
 getContrast('#00FF33', '#616161'); // 4.528 contrast ratio
 getContrast('#00FF33', '#000000', 4); // 15.3518 contrast ratio
+```
+
+### `isContrasting`
+
+Determine if the provided colors are within the specified contrast ratio.
+
+```ts
+const isContrasting: boolean = isContrasting('#00FF33', '#FFFFFF', 1.3); // true - 1.368 contrast ratio
+isContrasting('#00FF33', '#FFFFFF', 4.5); // false - 1.368 contrast ratio
 ```
 
 ### `getRandomAAColor`
@@ -90,6 +113,17 @@ isAAAContrast('#00FF33', '#616161', true); // true - 4.528 contrast ratio with l
 Given two color variants: one to change `colorToChange`, and one to keep `colorToKeep`, the function will suggest the nearest WCAG AA compliant variant to the `colorToChange`, with respect to the `colorToKeep`.
 
 It does this by lightening and darkening the `colorToChange` via binary searching relative contrasting lightness, and then taking either the lighter or darker value based on whichever is closer to the original.
+
+```ts
+const suggestion: string = suggestAAColorVariant('#00FF33', '#FFFFFF'); // #008a1c
+getContrast('#FFFFFF', '#008a1c'); // 4.514
+suggestAAColorVariant('#00FF33', '#FFFFFF', true); // large text - #00ac22
+getContrast('#FFFFFF', '#00ac22'); // 3.033
+```
+
+### `suggestAAAColorVariant`
+
+Similar to [suggestAAColorVariant](#suggestaacolorvariant), but using WCAG AAA standards of >= 7 contrast ratio (or >= 4.5 contrast ratio for large text).
 
 ```ts
 const suggestion: string = suggestAAColorVariant('#00FF33', '#FFFFFF'); // #008a1c
