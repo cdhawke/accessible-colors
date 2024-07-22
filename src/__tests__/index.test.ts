@@ -4,6 +4,7 @@ import {
   suggestAAColorVariant,
   isAAContrast,
   randomColor,
+  getRandomAAAColor,
 } from '..';
 
 describe('accessible-colors', () => {
@@ -21,6 +22,15 @@ describe('accessible-colors', () => {
       expect(getLuminance('#ff00ff')).toBe(0.2848);
       expect(getLuminance('#00ffff')).toBe(0.7874);
       expect(getLuminance('#ffff00')).toBe(0.9278);
+    });
+  });
+
+  describe('getRandomAAAColor', () => {
+    it('should return a valid color', () => {
+      expect(getRandomAAAColor('#888888', true)).not.toBe(null);
+    });
+    it('should return null if unable to find a color', () => {
+      expect(getRandomAAAColor('#888888', false)).toBe(null);
     });
   });
 

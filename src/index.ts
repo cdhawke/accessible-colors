@@ -118,9 +118,16 @@ export const randomColor = () => {
  * @param large - whether the text should be considered large, adjusting the contrast ratio requirement to 3:1.
  * @returns a random color that is accessible based on the WCAG 2.0 AA standard.
  */
-export const getRandomAAColor = (background: string, large = false): string => {
+export const getRandomAAColor = (
+  background: string,
+  large = false
+): string | null => {
   let color = randomColor();
+  let attempts = 0;
   while (!isAAContrast(background, color, large)) {
+    if (attempts++ > 1000) {
+      return null; // could not find a color that meets the contrast ratio within a reasonable number of tries
+    }
     color = randomColor();
   }
   return color;
@@ -137,9 +144,13 @@ export const getRandomAAColor = (background: string, large = false): string => {
 export const getRandomAAAColor = (
   background: string,
   large = false
-): string => {
+): string | null => {
   let color = randomColor();
+  let attempts = 0;
   while (!isAAAContrast(background, color, large)) {
+    if (attempts++ > 1000) {
+      return null; // could not find a color that meets the contrast ratio within a reasonable number of tries
+    }
     color = randomColor();
   }
 
