@@ -1,6 +1,6 @@
 {
   "name": "accessible-colors",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Utility functions for working with colors in adherence to WCAG 2.1 guidelines.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
