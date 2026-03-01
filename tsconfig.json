@@ -2,24 +2,18 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "sourceMap": true,
-    "outDir": "dist",
     "strict": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "declarationDir": "types",
-    "emitDeclarationOnly": true
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"],
   "exclude": [
     "node_modules",
     "dist",
-    "types",
-    "src/**/*.test.ts",
-    "scripts/bin.js"
+    "src/**/*.test.ts"
   ]
 }
