@@ -1,6 +1,6 @@
 {
   "name": "accessible-colors",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Utility functions for working with colors in adherence to WCAG 2.1 guidelines.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
