@@ -2,6 +2,7 @@ import {
   getContrast,
   getLuminance,
   suggestAAColorVariant,
+  suggestAAAColorVariant,
   isAAContrast,
   isAAAContrast,
   isContrasting,
@@ -276,6 +277,72 @@ describe('accessible-colors', () => {
       it('should return null for invalid input', () => {
         expect(getContrastReport('nope', '#ffffff')).toBe(null);
       });
+    });
+  });
+
+  describe('suggestion compliance', () => {
+    // Regression: in 1.0.9 the binary search terminated using the 3dp-rounded
+    // contrast, so it accepted a candidate at 4.4996 as meeting 4.5. Measured
+    // against the published 1.0.9 build, 2.19% of AA suggestions and 1.43% of
+    // AAA suggestions were actually below their threshold — the differentiating
+    // feature was emitting non-compliant colors.
+    const exactRatio = (c1: string, c2: string) => {
+      const l1 = getLuminance(c1) as number;
+      const l2 = getLuminance(c2) as number;
+      return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    };
+
+    it('should never suggest a color below the exact AA threshold', () => {
+      for (let i = 0; i < 3000; i++) {
+        const change = randomColor();
+        const keep = randomColor();
+        for (const [large, threshold] of [
+          [false, 4.5],
+          [true, 3],
+        ] as const) {
+          const suggestion = suggestAAColorVariant(change, keep, large);
+          if (suggestion !== null) {
+            expect(exactRatio(suggestion, keep)).toBeGreaterThanOrEqual(
+              threshold
+            );
+          }
+        }
+      }
+    });
+
+    it('should never suggest a color below the exact AAA threshold', () => {
+      for (let i = 0; i < 3000; i++) {
+        const change = randomColor();
+        const keep = randomColor();
+        for (const [large, threshold] of [
+          [false, 7],
+          [true, 4.5],
+        ] as const) {
+          const suggestion = suggestAAAColorVariant(change, keep, large);
+          if (suggestion !== null) {
+            expect(exactRatio(suggestion, keep)).toBeGreaterThanOrEqual(
+              threshold
+            );
+          }
+        }
+      }
+    });
+
+    it('should suggest compliant colors for the measured 1.0.9 failures', () => {
+      // Pairs where 1.0.9 returned a suggestion at 4.4996-4.4999.
+      const cases: Array<[string, string]> = [
+        ['#283b66', '#bda44e'],
+        ['#ddf3cf', '#a035d4'],
+        ['#1d0441', '#6e8726'],
+        ['#5e0261', '#6daa38'],
+      ];
+      for (const [change, keep] of cases) {
+        const suggestion = suggestAAColorVariant(change, keep);
+        expect(suggestion).not.toBe(null);
+        expect(exactRatio(suggestion as string, keep)).toBeGreaterThanOrEqual(
+          4.5
+        );
+      }
     });
   });
 });

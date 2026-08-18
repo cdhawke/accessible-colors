@@ -62,6 +62,14 @@ upgrade.
   as meeting AA. Measured 27 such pairs in 300,000 random samples. Comparisons
   now use the exact ratio; rounding applies only to `getContrast`'s display
   output.
+- **`suggestAAColorVariant` and `suggestAAAColorVariant` returned non-compliant
+  colors.** The same rounding fault reached the suggestion search, which
+  terminated as soon as the rounded ratio hit the threshold — so it would accept
+  a candidate at 4.4996 as meeting 4.5. Measured against the published 1.0.9
+  build across 20,000 random pairs, **2.19% of AA suggestions and 1.43% of AAA
+  suggestions were actually below their threshold**. Since the whole point of
+  these functions is to hand back a color that passes, this was the most
+  consequential form of the defect. Now zero.
 - **`getRandomAAColor` failed when valid colors existed.** Uniform rejection
   sampling capped at 1000 attempts returned `null` roughly 76% of the time for
   `#777777`, where only 0.04% of RGB space meets AA. Both generators now solve
