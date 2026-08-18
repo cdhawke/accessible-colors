@@ -8,6 +8,9 @@ import {
   randomColor,
   getRandomAAColor,
   getRandomAAAColor,
+  isNonTextContrast,
+  getContrastLevel,
+  getContrastReport,
 } from '..';
 
 describe('accessible-colors', () => {
@@ -220,6 +223,59 @@ describe('accessible-colors', () => {
         expect(secondContrast).toBeGreaterThanOrEqual(3);
         expect(secondContrast).toBeLessThanOrEqual(21);
       }
+    });
+  });
+
+  describe('WCAG 2.1 coverage', () => {
+    describe('isNonTextContrast', () => {
+      it('should apply the 3:1 threshold from SC 1.4.11', () => {
+        expect(isNonTextContrast('#767676', '#ffffff')).toBe(true); // 4.54
+        expect(isNonTextContrast('#949494', '#ffffff')).toBe(true); // 3.03
+        expect(isNonTextContrast('#a0a0a0', '#ffffff')).toBe(false); // 2.66
+        expect(isNonTextContrast('nope', '#ffffff')).toBe(null);
+      });
+    });
+
+    describe('getContrastLevel', () => {
+      it('should report the highest level achieved per content type', () => {
+        expect(getContrastLevel('#000000', '#ffffff')).toBe('AAA'); // 21
+        expect(getContrastLevel('#767676', '#ffffff')).toBe('AA'); // 4.54
+        expect(getContrastLevel('#949494', '#ffffff')).toBe('fail'); // 3.03
+        expect(getContrastLevel('#949494', '#ffffff', 'large')).toBe('AA');
+        expect(getContrastLevel('#767676', '#ffffff', 'large')).toBe('AAA');
+      });
+
+      it('should never report AAA for non-text, which defines no enhanced level', () => {
+        expect(getContrastLevel('#000000', '#ffffff', 'non-text')).toBe('AA');
+        expect(getContrastLevel('#949494', '#ffffff', 'non-text')).toBe('AA');
+        expect(getContrastLevel('#a0a0a0', '#ffffff', 'non-text')).toBe('fail');
+      });
+
+      it('should return null for invalid input', () => {
+        expect(getContrastLevel('#gg', '#ffffff')).toBe(null);
+      });
+    });
+
+    describe('getContrastReport', () => {
+      it('should agree with every individual predicate', () => {
+        for (let i = 0; i < 2000; i++) {
+          const a = randomColor();
+          const b = randomColor();
+          const report = getContrastReport(a, b)!;
+
+          expect(report.ratio).toBe(getContrast(a, b));
+          expect(report.normal.aa).toBe(isAAContrast(a, b));
+          expect(report.normal.aaa).toBe(isAAAContrast(a, b));
+          expect(report.large.aa).toBe(isAAContrast(a, b, true));
+          expect(report.large.aaa).toBe(isAAAContrast(a, b, true));
+          expect(report.nonText.passes).toBe(isNonTextContrast(a, b));
+          expect(report.level).toBe(getContrastLevel(a, b));
+        }
+      });
+
+      it('should return null for invalid input', () => {
+        expect(getContrastReport('nope', '#ffffff')).toBe(null);
+      });
     });
   });
 });

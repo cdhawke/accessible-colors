@@ -147,6 +147,122 @@ export const isAAAContrast = (
 };
 
 /**
+ * isNonTextContrast returns true if two colors satisfy WCAG 2.1 SC 1.4.11
+ * Non-text Contrast, which requires 3:1 for the visual boundaries of UI
+ * components, focus indicators, and graphical objects needed to understand
+ * content.
+ *
+ * This is the same 3:1 threshold as large text, but naming it separately
+ * matters: checking a button border by claiming it is "large text" obscures
+ * which success criterion is actually being satisfied.
+ *
+ * @link https://www.w3.org/TR/WCAG21/#non-text-contrast
+ * @param color1 - first color to compare in hex format (e.g. #000000)
+ * @param color2 - second color to compare in hex format (e.g. #ffffff)
+ * @returns true if the contrast ratio is at least 3:1, or `null` if either color is invalid
+ */
+export const isNonTextContrast = (
+  color1: string,
+  color2: string
+): boolean | null => {
+  return isContrasting(color1, color2, 3);
+};
+
+/**
+ * The kind of content a color pair is being used for, which determines the
+ * required contrast ratio.
+ *
+ * - `normal` — body text: 4.5:1 for AA, 7:1 for AAA (SC 1.4.3, 1.4.6)
+ * - `large` — at least 18.66px bold or 24px regular: 3:1 for AA, 4.5:1 for AAA
+ * - `non-text` — UI boundaries, focus indicators, graphics: 3:1 (SC 1.4.11)
+ */
+export type ContentType = 'normal' | 'large' | 'non-text';
+
+/**
+ * The highest WCAG 2.1 conformance level a color pair achieves.
+ * SC 1.4.11 defines no enhanced level, so `non-text` content returns
+ * `'AA'` or `'fail'` only.
+ */
+export type ContrastLevel = 'AAA' | 'AA' | 'fail';
+
+/** Required contrast ratios by content type and conformance level. */
+const THRESHOLDS: Record<ContentType, { AA: number; AAA: number }> = {
+  normal: { AA: 4.5, AAA: 7 },
+  large: { AA: 3, AAA: 4.5 },
+  'non-text': { AA: 3, AAA: Infinity },
+};
+
+/**
+ * getContrastLevel returns the highest WCAG 2.1 level a color pair achieves for
+ * the given content type, rather than a bare pass/fail against one threshold.
+ *
+ * @param color1 - first color to compare in hex format (e.g. #000000)
+ * @param color2 - second color to compare in hex format (e.g. #ffffff)
+ * @param content - the kind of content the pair is used for, defaulting to `normal`
+ * @returns `'AAA'`, `'AA'`, or `'fail'`, or `null` if either color is invalid
+ */
+export const getContrastLevel = (
+  color1: string,
+  color2: string,
+  content: ContentType = 'normal'
+): ContrastLevel | null => {
+  const ratio = rawContrast(color1, color2);
+  if (ratio === null) {
+    return null;
+  }
+  const { AA, AAA } = THRESHOLDS[content];
+  if (ratio >= AAA) return 'AAA';
+  if (ratio >= AA) return 'AA';
+  return 'fail';
+};
+
+/**
+ * A complete account of how a color pair performs against WCAG 2.1, suitable
+ * for audit tooling, linters, CI gates and design-system dashboards that would
+ * otherwise call several predicates and reassemble the result themselves.
+ */
+export interface ContrastReport {
+  /** The exact contrast ratio, rounded to the requested precision. */
+  ratio: number;
+  /** Body text — SC 1.4.3 (AA, 4.5:1) and SC 1.4.6 (AAA, 7:1). */
+  normal: { aa: boolean; aaa: boolean };
+  /** Large text — at least 18.66px bold or 24px regular. */
+  large: { aa: boolean; aaa: boolean };
+  /** UI components and graphical objects — SC 1.4.11 (3:1). */
+  nonText: { passes: boolean };
+  /** Highest level achieved for body text, the most common question. */
+  level: ContrastLevel;
+}
+
+/**
+ * getContrastReport returns every WCAG 2.1 verdict for a color pair in one
+ * call.
+ *
+ * @param color1 - first color to compare in hex format (e.g. #000000)
+ * @param color2 - second color to compare in hex format (e.g. #ffffff)
+ * @param precision - number of decimal places to round the reported ratio to
+ * @returns a full report, or `null` if either color is invalid
+ */
+export const getContrastReport = (
+  color1: string,
+  color2: string,
+  precision = 3
+): ContrastReport | null => {
+  const ratio = rawContrast(color1, color2);
+  if (ratio === null) {
+    return null;
+  }
+
+  return {
+    ratio: Math.round(ratio * 10 ** precision) / 10 ** precision,
+    normal: { aa: ratio >= 4.5, aaa: ratio >= 7 },
+    large: { aa: ratio >= 3, aaa: ratio >= 4.5 },
+    nonText: { passes: ratio >= 3 },
+    level: ratio >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : 'fail',
+  };
+};
+
+/**
  * randomColor will return a random color in hex format (e.g. `'#000000'`)
  * @returns a random color in hex format (e.g. `'#000000'`)
  */
