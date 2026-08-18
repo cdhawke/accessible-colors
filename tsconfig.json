@@ -8,12 +8,18 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+
+    // The emitted .d.ts is part of the public contract, so it is worth paying
+    // for stricter checks than an application would.
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true
   },
   "include": ["src/**/*"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/**/*.test.ts"
-  ]
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
 }

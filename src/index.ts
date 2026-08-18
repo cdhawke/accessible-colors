@@ -5,7 +5,7 @@ import {
   hslToHex,
   suggestColorVariant,
 } from './helpers';
-import { HSL } from './types';
+import type { HSL } from './types';
 
 /**
  * Color shape types. Note that `HSL` uses the 0-1 range for all three channels,
