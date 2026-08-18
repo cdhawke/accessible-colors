@@ -8,6 +8,25 @@ import {
 import { HSL } from './types';
 
 /**
+ * Color shape types. Note that `HSL` uses the 0-1 range for all three channels,
+ * not the CSS convention of 0-360 for hue and 0-100% for saturation/lightness.
+ */
+export type { RGB, HSL } from './types';
+
+/**
+ * Conversion helpers. `hexToRgb` and `hexToHsl` return `null` for input that is
+ * not a valid hex color rather than throwing or producing a garbage result.
+ */
+export {
+  hexToRgb,
+  rgbToHex,
+  hexToHsl,
+  hslToHex,
+  rgbToHsl,
+  hslToRgb,
+} from './helpers';
+
+/**
  * Original luminance function (used here, WCAG2.0 standard):
  * @link https://www.w3.org/TR/WCAG20/#relativeluminancedef
  * L = 0.2126 * R + 0.7152 * G + 0.0722 * B
