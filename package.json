@@ -1,7 +1,7 @@
 {
   "name": "accessible-colors",
-  "version": "1.1.0",
-  "description": "Utility functions for working with colors in adherence to WCAG 2.1 guidelines.",
+  "version": "1.2.0",
+  "description": "Utility functions for working with colors in adherence to WCAG 2.1 guidelines. Accepts hex, rgb() and hsl(), and suggests accessible alternatives.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

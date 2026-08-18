@@ -13,7 +13,13 @@ const { gzipSync, brotliCompressSync } = require('node:zlib');
 const { readFileSync, existsSync } = require('node:fs');
 const { join } = require('node:path');
 
-const BUDGETS = [{ file: 'dist/index.mjs', limit: 2048 }];
+// Raised from 2048 in 1.2.0 to accept CSS color format parsing (rgb(), hsl(),
+// both syntaxes, all angle units), which costs ~550 B gzip. Hex-only input was
+// the largest barrier to adoption — getComputedStyle returns rgb() regardless
+// of how a color was authored — so this buys the ability to check contrast
+// against what a browser actually rendered. It does give up the size lead over
+// colord (2.1 KB), which was a deliberate call: colord cannot suggest a fix.
+const BUDGETS = [{ file: 'dist/index.mjs', limit: 2560 }];
 
 const root = join(__dirname, '..');
 let failed = false;

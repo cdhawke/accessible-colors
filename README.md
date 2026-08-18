@@ -13,7 +13,7 @@ Utility functions for generating and interacting with colors based on WCAG 2.1
 [enhanced](https://www.w3.org/TR/WCAG21/#contrast-enhanced), and
 [non-text](https://www.w3.org/TR/WCAG21/#non-text-contrast) contrast guidelines.
 
-- **~1.7 KB gzipped**, zero runtime dependencies, fully tree-shakeable
+- **~2.3 KB gzipped**, zero runtime dependencies, fully tree-shakeable
 - **Suggests the nearest compliant color**, not just a pass/fail verdict
 - **Returns `null` for input it cannot parse** — never a false "accessible"
 
@@ -287,21 +287,46 @@ APCA / WCAG 3 is not currently supported.
 
 ## Accepted color formats
 
-Colors are supplied as hex strings, with or without a leading `#`, in any of:
+Every function that takes a color accepts any of these:
 
-| Form | Example | Notes |
-|---|---|---|
-| `RGB` | `#abc` | Expanded to `#aabbcc` |
-| `RGBA` | `#abcd` | Alpha parsed, then discarded |
-| `RRGGBB` | `#aabbcc` | |
-| `RRGGBBAA` | `#aabbccdd` | Alpha parsed, then discarded |
+| Format | Examples |
+|---|---|
+| Hex | `#abc`, `#abcd`, `#aabbcc`, `#aabbccdd` |
+| `rgb()` / `rgba()` | `rgb(255, 0, 0)`, `rgb(255 0 0)`, `rgb(100% 0% 0%)`, `rgb(255 0 0 / 50%)` |
+| `hsl()` / `hsla()` | `hsl(0, 100%, 50%)`, `hsl(0deg 100% 50%)`, `hsl(0.5turn 100% 50% / 0.5)` |
 
-Input is case-insensitive and surrounding whitespace is trimmed.
+Both the legacy comma syntax and the modern space syntax are supported, along
+with all four CSS angle units (`deg`, `grad`, `rad`, `turn`). Input is
+case-insensitive, whitespace is trimmed, and the leading `#` on hex is optional.
+Out-of-range channels clamp and hues wrap, matching CSS.
 
-Alpha is validated but not applied: WCAG contrast is undefined for a
-translucent color without a known backdrop, so composite before measuring
-rather than relying on the library to guess. Other CSS formats — `rgb()`,
-`hsl()`, `oklch()`, named colors — are not yet supported and return `null`.
+This means you can measure what a browser actually rendered:
+
+```ts
+const styles = getComputedStyle(element);
+getContrastLevel(styles.color, styles.backgroundColor); // 'AA'
+```
+
+`getComputedStyle` returns `rgb()` regardless of how a color was authored, so
+hex-only libraries cannot check computed values without a converter.
+
+**Alpha is validated but not applied.** WCAG contrast is undefined for a
+translucent color without a known backdrop, so composite before measuring rather
+than relying on the library to guess.
+
+**Not yet supported**, and returning `null` rather than a guess: named colors
+(`red`, `rebeccapurple`), `oklch()`, `oklab()`, `lab()`, `lch()`, `color()`,
+`currentColor` and `transparent`.
+
+### `parseColor`
+
+The parser is exported if you need RGB channels directly:
+
+```ts
+parseColor('hsl(0 100% 50%)'); // { r: 255, g: 0, b: 0 }
+parseColor('rgb(255 0 0 / 50%)'); // { r: 255, g: 0, b: 0 }
+parseColor('oklch(0.7 0.15 250)'); // null — unsupported
+```
 
 ## License
 
