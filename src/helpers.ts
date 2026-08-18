@@ -1,4 +1,4 @@
-import { HSL, RGB } from './types';
+import type { HSL, RGB } from './types';
 
 /**
  * hslToHex will return the hex representation of an hsl color.
@@ -58,12 +58,12 @@ export const hexToRgb = (hex: string): RGB | null => {
     return null;
   }
   const match = HEX_PATTERN.exec(hex.trim());
-  if (!match) {
+  const digits = match?.[1];
+  if (digits === undefined) {
     return null;
   }
 
   // Expand shorthand (`abc` -> `aabbcc`) before parsing, then drop any alpha.
-  const digits = match[1];
   const expanded =
     digits.length <= 4
       ? digits
@@ -142,32 +142,30 @@ export const rgbToHsl = ({ r, g, b }: RGB): HSL => {
   r /= 255;
   g /= 255;
   b /= 255;
-  const max = Math.max(r, g, b),
-    min = Math.min(r, g, b);
-  let h, s;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
   const l = (max + min) / 2;
 
-  if (max == min) {
-    h = s = 0; // achromatic
-  } else {
+  let h = 0;
+  let s = 0;
+
+  if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
+
+    // `max` is by construction one of r, g or b, but the compiler cannot know
+    // that from a switch. Selecting the branch by comparison keeps `h`
+    // provably assigned without suppressing the check.
+    if (max === r) {
+      h = (g - b) / d + (g < b ? 6 : 0);
+    } else if (max === g) {
+      h = (b - r) / d + 2;
+    } else {
+      h = (r - g) / d + 4;
     }
-    // @ts-ignore
     h /= 6;
   }
 
-  // @ts-ignore
   return { h, s, l };
 };
 
