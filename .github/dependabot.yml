@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+    # The repository previously received one PR per dependency, which dominated
+    # the commit log. Dev dependencies move together and are not consumer
+    # facing, so they are grouped into a single PR.
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
