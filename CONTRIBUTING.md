@@ -89,6 +89,18 @@ Dependabot opens one grouped PR per week for dev dependencies, majors included.
 This package has zero runtime dependencies, so the whole tree is tooling and it
 is easier to review and land as a single change.
 
+There is one `overrides` entry, for `esbuild`. tsup 8.5.1 depends on
+`esbuild: ^0.27.0`, but GHSA-g7r4-m6w7-qqqr affects 0.27.3-0.28.0 and is only
+fixed in 0.28.1+, which is outside that range. The override forces 0.28.2. It is
+verified working — build succeeds, bundle output is byte-identical, and the
+linked consumer in `../accessible-colors-test` passes — but it does sit outside
+tsup's declared range, so remove it once tsup bumps its esbuild dependency.
+
+Note the distinction from the three overrides removed in 1.1.0: those pinned
+*backwards* to versions that had themselves become vulnerable and were never
+revisited. This one pins *forwards* to a patched version and carries a stated
+removal condition.
+
 TypeScript major updates are ignored in `.github/dependabot.yml`. This is a hard
 block rather than a preference: `typescript-eslint` 8.x declares
 `typescript: >=4.8.4 <6.1.0`, so installing TS 6 or 7 breaks linting. Remove the
