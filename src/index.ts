@@ -1,10 +1,6 @@
-import {
-  binarySearchContrast,
-  hexToHsl,
-  hexToRgb,
-  hslToHex,
-  suggestColorVariant,
-} from './helpers';
+import { hslToHex } from './helpers';
+import { parseColor } from './parse';
+import { binarySearchContrast, suggestColorVariant, toHsl } from './suggest';
 import type { HSL } from './types';
 
 /**
@@ -17,6 +13,7 @@ export type { RGB, HSL } from './types';
  * Conversion helpers. `hexToRgb` and `hexToHsl` return `null` for input that is
  * not a valid hex color rather than throwing or producing a garbage result.
  */
+export { parseColor } from './parse';
 export {
   hexToRgb,
   rgbToHex,
@@ -34,7 +31,7 @@ export {
  * @returns a number between 0 and 1 representing the linear luminance of the color
  */
 export const getLuminance = (color: string): number | null => {
-  const rgb = hexToRgb(color);
+  const rgb = parseColor(color);
   if (rgb === null) {
     return null;
   }
@@ -326,7 +323,7 @@ const randomColorAtRatio = (
   // Hue and saturation are free choices; only lightness is constrained. Binary
   // search converges on the nearest compliant lightness for the chosen hue.
   const meetsRatio = (c1: string, c2: string) => isContrasting(c1, c2, ratio);
-  const backgroundHsl = hexToHsl(background);
+  const backgroundHsl = toHsl(background);
   if (backgroundHsl === null) {
     return null;
   }

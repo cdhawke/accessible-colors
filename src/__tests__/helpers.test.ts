@@ -5,9 +5,8 @@ import {
   hexToRgb,
   rgbToHsl,
   hslToRgb,
-  binarySearchContrast,
-  suggestColorVariant,
 } from '../helpers';
+import { binarySearchContrast, suggestColorVariant } from '../suggest';
 import { getContrast, isAAContrast, randomColor } from '..';
 
 describe('helpers', () => {

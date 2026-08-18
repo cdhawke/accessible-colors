@@ -36,10 +36,12 @@ These are not style preferences; they are the product.
 dependencies are fine.
 
 **The bundle size budget is enforced.** `npm run size` fails the build above
-2048 B gzip. Size is the clearest competitive advantage this package has —
-roughly 1.7 KB against colord's 2.1 KB and chroma-js's 16.5 KB. If a change
-needs the budget raised, say so explicitly in the PR and explain what the extra
-bytes buy. Do not raise it quietly.
+2560 B gzip. Size is a core part of the pitch — roughly 2.3 KB against colord's
+2.1 KB, color2k's 2.9 KB and chroma-js's 16.5 KB, with zero dependencies. If a
+change needs the budget raised, say so explicitly in the PR and explain what the
+extra bytes buy. Do not raise it quietly. The budget has been raised once, in
+1.2.0, to accept CSS color format parsing; the reasoning is recorded in
+`scripts/size.js`.
 
 **Never report a false pass.** This is the one rule that matters most. A
 function that cannot determine an answer must return `null`, never `true`. The

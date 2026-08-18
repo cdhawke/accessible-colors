@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0]
+
+### Added
+
+- **`rgb()` and `hsl()` input.** Every function that takes a color now accepts
+  `rgb()`/`rgba()` and `hsl()`/`hsla()` alongside hex, in both the legacy comma
+  syntax and the modern space syntax, with percentage or numeric channels and
+  all four CSS angle units. Hex-only input was the largest barrier to using this
+  library: `getComputedStyle` returns `rgb()` regardless of how a color was
+  authored, so checking contrast against what a browser actually rendered
+  previously required writing a converter first.
+
+  ```ts
+  const styles = getComputedStyle(element);
+  getContrastLevel(styles.color, styles.backgroundColor); // 'AA'
+  ```
+
+- `parseColor(color)` — exported for callers who want RGB channels directly.
+
+### Changed
+
+- Bundle size is now ~2.3 KB gzip, up from ~1.7 KB, for the parsing above. The
+  size budget was raised from 2048 to 2560 B deliberately; the reasoning is
+  recorded in `scripts/size.js`.
+- Package description updated to mention the supported formats.
+
+### Notes
+
+Purely additive — hex behaves exactly as before and no public signature
+changed. Formats that are still unsupported (named colors, `oklch()`, `lab()`,
+`color()`, `currentColor`) return `null` rather than a guess.
+
 ## [1.1.0]
 
 This release fixes three defects that caused the library to report **false WCAG
@@ -79,6 +111,7 @@ change where they were previously incorrect**:
 
 See git history for releases at or before 1.0.9; this changelog begins at 1.1.0.
 
-[Unreleased]: https://github.com/cdhawke/accessible-colors/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/cdhawke/accessible-colors/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/cdhawke/accessible-colors/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/cdhawke/accessible-colors/compare/v1.0.9...v1.1.0
 [1.0.9]: https://github.com/cdhawke/accessible-colors/releases/tag/v1.0.9
