@@ -83,6 +83,17 @@ The release workflow reruns lint, tests, build, size and manifest checks,
 verifies the tag matches `package.json`, and publishes with npm provenance.
 Do not run `npm publish` locally.
 
+## Dependency updates
+
+Dependabot opens one grouped PR per week for dev dependencies, majors included.
+This package has zero runtime dependencies, so the whole tree is tooling and it
+is easier to review and land as a single change.
+
+TypeScript major updates are ignored in `.github/dependabot.yml`. This is a hard
+block rather than a preference: `typescript-eslint` 8.x declares
+`typescript: >=4.8.4 <6.1.0`, so installing TS 6 or 7 breaks linting. Remove the
+ignore entry once typescript-eslint ships TS 7 support.
+
 ## Decisions on record
 
 **Source maps ship in the tarball.** They account for roughly two thirds of the

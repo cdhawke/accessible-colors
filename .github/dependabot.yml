@@ -4,14 +4,24 @@ updates:
     directory: '/'
     schedule:
       interval: weekly
-    # The repository previously received one PR per dependency, which dominated
-    # the commit log. Dev dependencies move together and are not consumer
-    # facing, so they are grouped into a single PR.
+    # This package has zero runtime dependencies — everything here is dev
+    # tooling, and it moves together. Grouping *all* update types, majors
+    # included, keeps that as one reviewable PR per week instead of a burst of
+    # individual ones. Without `update-types` a group covers minor and patch
+    # only, which is what produced separate PRs for the eslint and typescript
+    # majors on first activation.
     groups:
       dev-dependencies:
         dependency-type: development
-        update-types: [minor, patch]
-    open-pull-requests-limit: 5
+        update-types: [major, minor, patch]
+    open-pull-requests-limit: 3
+    ignore:
+      # typescript-eslint 8.x declares `typescript: >=4.8.4 <6.1.0`, so TS 6 and
+      # 7 cannot be installed without breaking the linter. Dependabot cannot see
+      # that this is a hard block rather than a lag, and reopens the PR every
+      # week. Drop this entry once typescript-eslint ships TS 7 support.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: '/'
@@ -20,3 +30,4 @@ updates:
     groups:
       actions:
         patterns: ['*']
+    open-pull-requests-limit: 2
