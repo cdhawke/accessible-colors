@@ -6,6 +6,7 @@ import {
   isAAAContrast,
   isContrasting,
   randomColor,
+  getRandomAAColor,
   getRandomAAAColor,
 } from '..';
 
@@ -53,12 +54,64 @@ describe('accessible-colors', () => {
     });
   });
 
-  describe('getRandomAAAColor', () => {
+  describe('random accessible colors', () => {
     it('should return a valid color', () => {
       expect(getRandomAAAColor('#888888', true)).not.toBe(null);
     });
-    it('should return null if unable to find a color', () => {
+
+    it('should return null only when no color can satisfy the ratio', () => {
+      // AAA against a mid grey is genuinely unsatisfiable: 7:1 needs a
+      // luminance above 1 or below 0.
       expect(getRandomAAAColor('#888888', false)).toBe(null);
+      expect(getRandomAAAColor('#808080', false)).toBe(null);
+    });
+
+    it('should never return null when a compliant color exists', () => {
+      // Regression: uniform rejection sampling failed ~76% of the time for
+      // `#777777`, where only 0.04% of RGB space meets AA.
+      for (const background of [
+        '#777777',
+        '#808080',
+        '#888888',
+        '#ffffff',
+        '#000000',
+        '#4a90d9',
+      ]) {
+        for (let i = 0; i < 200; i++) {
+          expect(getRandomAAColor(background)).not.toBe(null);
+        }
+      }
+    });
+
+    it('should only return colors that actually meet the standard', () => {
+      for (let i = 0; i < 500; i++) {
+        const background = randomColor();
+        for (const large of [false, true]) {
+          const aa = getRandomAAColor(background, large);
+          if (aa !== null) {
+            expect(isAAContrast(background, aa, large)).toBe(true);
+          }
+          const aaa = getRandomAAAColor(background, large);
+          if (aaa !== null) {
+            expect(isAAAContrast(background, aaa, large)).toBe(true);
+          }
+        }
+      }
+    });
+
+    it('should return null for an invalid background', () => {
+      expect(getRandomAAColor('nope')).toBe(null);
+      expect(getRandomAAAColor('#ff')).toBe(null);
+    });
+
+    it('should be reproducible when given a seeded generator', () => {
+      const seeded = () => {
+        let state = 42;
+        return () => (state = (state * 1664525 + 1013904223) >>> 0) / 2 ** 32;
+      };
+      expect(getRandomAAColor('#ffffff', false, { random: seeded() })).toBe(
+        getRandomAAColor('#ffffff', false, { random: seeded() })
+      );
     });
   });
 
@@ -87,7 +140,9 @@ describe('accessible-colors', () => {
     it('should treat shorthand hex as its expanded form', () => {
       // Regression: `#fff` parsed as the integer 0xfff, giving 2.512 here.
       expect(getContrast('#fff', '#000')).toBe(21);
-      expect(getContrast('#f00', '#0f0')).toBe(getContrast('#ff0000', '#00ff00'));
+      expect(getContrast('#f00', '#0f0')).toBe(
+        getContrast('#ff0000', '#00ff00')
+      );
     });
   });
 
@@ -118,8 +173,7 @@ describe('accessible-colors', () => {
         const b = randomColor();
         const l1 = getLuminance(a) as number;
         const l2 = getLuminance(b) as number;
-        const exact =
-          (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+        const exact = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
         for (const threshold of [3, 4.5, 7]) {
           expect(isContrasting(a, b, threshold)).toBe(exact >= threshold);
         }

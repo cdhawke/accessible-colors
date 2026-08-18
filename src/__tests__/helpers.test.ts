@@ -132,7 +132,12 @@ describe('helpers', () => {
     const green = hexToHsl('#00ff33')!;
 
     it('should find a compliant color when lightening is possible', () => {
-      const result = binarySearchContrast(green, black, 'lighten', isAAContrast);
+      const result = binarySearchContrast(
+        green,
+        black,
+        'lighten',
+        isAAContrast
+      );
       expect(result).not.toBe(null);
       expect(isAAContrast(hslToHex(result!), '#000000')).toBe(true);
     });
@@ -166,9 +171,7 @@ describe('helpers', () => {
             isAAContrast
           );
           if (result !== null) {
-            expect(
-              isAAContrast(hslToHex(result), hslToHex(fixed))
-            ).toBe(true);
+            expect(isAAContrast(hslToHex(result), hslToHex(fixed))).toBe(true);
           }
         }
       }
@@ -189,7 +192,11 @@ describe('helpers', () => {
 
     it('should pick the candidate closest to the original lightness', () => {
       // Near-white input against white: darkening is the only option.
-      const suggestion = suggestColorVariant('#fafafa', '#ffffff', isAAContrast);
+      const suggestion = suggestColorVariant(
+        '#fafafa',
+        '#ffffff',
+        isAAContrast
+      );
       expect(suggestion).not.toBe(null);
       expect(getContrast(suggestion, '#ffffff')!).toBeGreaterThanOrEqual(4.5);
     });
