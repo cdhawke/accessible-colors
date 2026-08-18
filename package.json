@@ -61,6 +61,9 @@
     "url": "https://github.com/cdhawke/accessible-colors/issues"
   },
   "homepage": "https://github.com/cdhawke/accessible-colors#accessible-colors",
+  "overrides": {
+    "esbuild": "^0.28.2"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
