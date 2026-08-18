@@ -1,6 +1,6 @@
 {
   "name": "accessible-colors",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Utility functions for working with colors in adherence to WCAG 2.1 guidelines.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -17,10 +17,17 @@
       }
     }
   },
-  "bin": "scripts/bin.js",
+  "sideEffects": false,
   "files": [
     "dist/**/*"
   ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "format": "prettier --write 'src/**/*'",
@@ -28,7 +35,10 @@
     "lint": "eslint --fix 'src/**/*.ts'",
     "test": "jest",
     "prepare": "husky",
-    "prepublishOnly": "npm run build-production"
+    "prepublishOnly": "npm run build-production",
+    "lint:ci": "eslint 'src/**/*.ts'",
+    "size": "node scripts/size.js",
+    "check-manifest": "node scripts/check-manifest.js"
   },
   "repository": "git+https://github.com/cdhawke/accessible-colors.git",
   "keywords": [

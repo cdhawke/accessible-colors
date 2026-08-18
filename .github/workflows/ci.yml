@@ -1,17 +1,54 @@
 name: CI
 
-on: push
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref rather than paying for both.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  ci:
+  test:
+    name: test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Must cover the range declared in package.json engines.
+        node: [18, 20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+      - run: npm ci
+      # lint:ci rather than lint — the latter runs eslint --fix, which in CI
+      # silently rewrites files that are then discarded, so violations passed.
+      - run: npm run lint:ci
+      - run: npm test -- --coverage
+      - run: npm run build-production
+
+  package:
+    name: package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: 22
           cache: 'npm'
       - run: npm ci
-      - run: npm run lint
-      - run: npm test
-      - run: npm run build
+      - run: npm run build-production
+      # Fails if the gzipped bundle exceeds its budget, or if `sideEffects:
+      # false` stops being true.
+      - run: npm run size
+      # Guards against the class of drift that shipped a `bin` pointing at a
+      # file the tarball never contained.
+      - run: npm run check-manifest

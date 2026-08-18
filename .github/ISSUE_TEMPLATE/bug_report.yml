@@ -1,0 +1,60 @@
+name: Bug report
+description: Report incorrect output or unexpected behavior
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The single most useful thing you can provide is
+        the exact color values involved — almost every bug in this library
+        reproduces from two hex strings.
+
+  - type: input
+    id: colors
+    attributes:
+      label: Colors involved
+      description: The exact values you passed in, as written.
+      placeholder: "'#00FF33' and '#FFFFFF'"
+    validations:
+      required: true
+
+  - type: input
+    id: call
+    attributes:
+      label: The call you made
+      placeholder: "getContrast('#00FF33', '#FFFFFF')"
+    validations:
+      required: true
+
+  - type: input
+    id: expected
+    attributes:
+      label: Expected result
+      description: If it is a contrast ratio, the value you believe is correct — and where you checked it.
+      placeholder: '1.368 (per WebAIM contrast checker)'
+    validations:
+      required: true
+
+  - type: input
+    id: actual
+    attributes:
+      label: Actual result
+      placeholder: 'null'
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: '1.1.0'
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Environment, bundler, or other context if relevant.
+    validations:
+      required: false
