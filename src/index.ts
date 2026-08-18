@@ -7,22 +7,48 @@ import { hexToRgb, suggestColorVariant } from './helpers';
  * @param color (r, g, b) color
  * @returns a number between 0 and 1 representing the linear luminance of the color
  */
-export const getLuminance = (color: string) => {
-  if (!color) {
-    return null;
-  }
+export const getLuminance = (color: string): number | null => {
   const rgb = hexToRgb(color);
-  if (!rgb) {
+  if (rgb === null) {
     return null;
   }
-  const [r, g, b] = Object.values(rgb).map((v) => {
+
+  const channel = (v: number) => {
     const value = v / 255;
     return value <= 0.03928
       ? value / 12.92
       : Math.pow((value + 0.055) / 1.055, 2.4);
-  });
+  };
 
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return (
+    0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b)
+  );
+};
+
+/**
+ * The exact, unrounded contrast ratio between two colors. Kept internal so that
+ * threshold comparisons never operate on a rounded value — a pair at 4.4996
+ * rounds to 4.5 and would otherwise be reported as meeting AA when it does not.
+ * @param color1 - first color to compare in hex format (e.g. #000000)
+ * @param color2 - second color to compare in hex format (e.g. #ffffff)
+ * @returns the contrast ratio between 1 and 21, or `null` if either color is invalid
+ */
+const rawContrast = (
+  color1: string | null,
+  color2: string | null
+): number | null => {
+  if (color1 === null || color2 === null) {
+    return null;
+  }
+  const luminance1 = getLuminance(color1);
+  const luminance2 = getLuminance(color2);
+  if (luminance1 === null || luminance2 === null) {
+    return null;
+  }
+  const light = luminance1 > luminance2 ? luminance1 : luminance2;
+  const dark = luminance1 > luminance2 ? luminance2 : luminance1;
+
+  return (light + 0.05) / (dark + 0.05);
 };
 
 /**
@@ -39,20 +65,12 @@ export const getContrast = (
   color1: string | null,
   color2: string | null,
   precision = 3
-) => {
-  if (color1 === null || color2 === null) {
+): number | null => {
+  const ratio = rawContrast(color1, color2);
+  if (ratio === null) {
     return null;
   }
-  const luminance1 = getLuminance(color1);
-  const luminance2 = getLuminance(color2);
-  if (luminance1 === null || luminance2 === null) {
-    return null;
-  }
-  const [light, dark] = [luminance1, luminance2].sort((a, b) => b - a);
-  return (
-    Math.round(((light + 0.05) / (dark + 0.05)) * 10 ** precision) /
-    10 ** precision
-  );
+  return Math.round(ratio * 10 ** precision) / 10 ** precision;
 };
 
 /**
@@ -66,9 +84,9 @@ export const isContrasting = (
   color1: string,
   color2: string,
   ratio: number
-) => {
-  const contrast = getContrast(color1, color2);
-  if (!contrast) {
+): boolean | null => {
+  const contrast = rawContrast(color1, color2);
+  if (contrast === null) {
     return null;
   }
   return contrast >= ratio;

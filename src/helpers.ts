@@ -14,10 +14,13 @@ export const hslToHex = (hsl: HSL): string => {
 /**
  * hexToHsl will return the HSL representation of a hex color.
  * @param str - hex representation of a color (e.g. #000000)
- * @returns the HSL representation of a color {h, s, l}
+ * @returns the HSL representation of a color {h, s, l}, or `null` if `str` is not a valid hex color
  */
-export const hexToHsl = (str: string): HSL => {
+export const hexToHsl = (str: string): HSL | null => {
   const rgb = hexToRgb(str);
+  if (rgb === null) {
+    return null;
+  }
 
   return rgbToHsl(rgb);
 };
@@ -34,12 +37,42 @@ export const rgbToHex = (rgb: RGB): string => {
 };
 
 /**
- * hexToRgb will return the red, green, and blue values of a color represented as numbers between 0 and 255.
- * @param hex - hex representation of a color (e.g. #000000)
- * @returns red, green, and blue values of a color represented as numbers between 0 and 255 {r, g, b}
+ * Matches the four hex color forms CSS accepts, with or without a leading `#`:
+ * `RGB`, `RGBA`, `RRGGBB`, `RRGGBBAA`.
  */
-export const hexToRgb = (hex: string): RGB => {
-  const bigint = parseInt(hex.replace(/^#/, ''), 16);
+const HEX_PATTERN = /^#?([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+/**
+ * hexToRgb will return the red, green, and blue values of a color represented as numbers between 0 and 255.
+ *
+ * Accepts shorthand (`#abc`), shorthand with alpha (`#abcd`), full (`#aabbcc`),
+ * and full with alpha (`#aabbccdd`). The alpha channel is parsed for validity but
+ * discarded — WCAG contrast is undefined for translucent colors without a known
+ * backdrop, so callers must composite before measuring.
+ *
+ * @param hex - hex representation of a color (e.g. #000000)
+ * @returns red, green, and blue values of a color represented as numbers between 0 and 255 {r, g, b}, or `null` if `hex` is not a valid hex color
+ */
+export const hexToRgb = (hex: string): RGB | null => {
+  if (typeof hex !== 'string') {
+    return null;
+  }
+  const match = HEX_PATTERN.exec(hex.trim());
+  if (!match) {
+    return null;
+  }
+
+  // Expand shorthand (`abc` -> `aabbcc`) before parsing, then drop any alpha.
+  const digits = match[1];
+  const expanded =
+    digits.length <= 4
+      ? digits
+          .split('')
+          .map((d) => d + d)
+          .join('')
+      : digits;
+
+  const bigint = parseInt(expanded.slice(0, 6), 16);
   const r = (bigint >> 16) & 255;
   const g = (bigint >> 8) & 255;
   const b = bigint & 255;
@@ -182,23 +215,17 @@ export const binarySearchContrast = (
     const adjusted = (min + max) / 2;
 
     const stringified = hslToHex({ ...hs, l: adjusted });
-    if (direction === 'lighten') {
-      if (!contrastFn(stringified, fixedHex, large)) {
-        min = adjusted;
-        minColor = hslToHex({ ...hs, l: adjusted });
-      } else {
-        max = adjusted;
-        maxColor = hslToHex({ ...hs, l: adjusted });
-      }
-    }
-    if (direction === 'darken') {
-      if (!contrastFn(stringified, fixedHex, large)) {
-        max = adjusted;
-        maxColor = hslToHex({ ...hs, l: adjusted });
-      } else {
-        min = adjusted;
-        minColor = hslToHex({ ...hs, l: adjusted });
-      }
+    const contrasts = !!contrastFn(stringified, fixedHex, large);
+
+    // Lightening walks `min` up toward the first compliant lightness; darkening
+    // walks `max` down toward it. Either way the compliant bound keeps the
+    // candidate we just built, so there is no need to recompute it.
+    if ((direction === 'lighten') === contrasts) {
+      max = adjusted;
+      maxColor = stringified;
+    } else {
+      min = adjusted;
+      minColor = stringified;
     }
   }
 
