@@ -37,7 +37,8 @@
     "prepare": "husky",
     "prepublishOnly": "npm run build-production",
     "lint:ci": "eslint 'src/**/*.ts'",
-    "size": "node scripts/size.js"
+    "size": "node scripts/size.js",
+    "check-manifest": "node scripts/check-manifest.js"
   },
   "repository": "git+https://github.com/cdhawke/accessible-colors.git",
   "keywords": [
