@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0]
+
+### Changed
+
+- **`suggestAAColorVariant` and `suggestAAAColorVariant` now search in OKLCH
+  instead of HSL.** HSL lightness is not perceptually uniform - holding hue and
+  saturation fixed in HSL while adjusting lightness does not hold *perceived*
+  hue and saturation fixed, so a compliant suggestion could read as a
+  noticeably different color from the one it started from. OKLCH is designed
+  so that equal steps in lightness correspond to roughly equal perceived
+  change.
+
+  Measured rather than assumed: across 5,000 random pairs, mean perceptual
+  distance (delta E OK) between the original color and its suggestion fell
+  about 1.7%, with the new algorithm picking a strictly closer-looking
+  candidate in 68% of pairs where the two disagree. On saturated inputs
+  specifically - the scenario motivating this change - mean hue drift across a
+  sample of vivid hues dropped from 0.7 degrees to 0.1 degrees.
+
+  The nearest-candidate tie-break (choosing between a lighter and a darker
+  compliant variant) now uses delta E OK, a real perceptual distance, in place
+  of raw HSL lightness difference.
+
+  Public signatures are unchanged. Output hex values will differ from 1.2.0 in
+  many cases - this is an intentional quality improvement, not a regression;
+  snapshot tests capturing exact suggestion output will need updating.
+
+- Bundle size is now ~3.0 KB gzip, up from ~2.3 KB, for the OKLab/OKLCH
+  conversion and gamut-mapping math. The size budget was raised from 2560 to
+  3200 B; the reasoning is recorded in `scripts/size.js`. This gives up the
+  size lead over color2k (2.9 KB) - deliberate, since no competitor in this
+  size class suggests a fix at all, and that remains the differentiator worth
+  protecting.
+
+### Notes
+
+`getRandomAAColor` / `getRandomAAAColor` also moved to the same OKLCH search
+internally, for the same reason and to avoid maintaining two divergent
+implementations of the same algorithm. Their documented behavior - always
+return a compliant color when one exists, `null` only when provably
+impossible - is unchanged and re-verified.
+
 ## [1.2.0]
 
 ### Added
@@ -119,7 +161,8 @@ change where they were previously incorrect**:
 
 See git history for releases at or before 1.0.9; this changelog begins at 1.1.0.
 
-[Unreleased]: https://github.com/cdhawke/accessible-colors/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/cdhawke/accessible-colors/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/cdhawke/accessible-colors/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/cdhawke/accessible-colors/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/cdhawke/accessible-colors/compare/v1.0.9...v1.1.0
 [1.0.9]: https://github.com/cdhawke/accessible-colors/releases/tag/v1.0.9

@@ -7,7 +7,12 @@ import {
   hslToRgb,
 } from '../helpers';
 import { binarySearchContrast, suggestColorVariant } from '../suggest';
+import { rgbToOklab, oklabToOklch, oklabToRgb, gamutMapChroma } from '../oklch';
 import { getContrast, isAAContrast, randomColor } from '..';
+
+const toOklch = (hex: string) => oklabToOklch(rgbToOklab(hexToRgb(hex)!));
+const oklchToHex = (found: { L: number; C: number; H: number }) =>
+  rgbToHex(oklabToRgb(gamutMapChroma(found.L, found.C, found.H)));
 
 describe('helpers', () => {
   describe('hexToRgb', () => {
@@ -126,25 +131,20 @@ describe('helpers', () => {
   });
 
   describe('binarySearchContrast', () => {
-    const white = hexToHsl('#ffffff')!;
-    const black = hexToHsl('#000000')!;
-    const green = hexToHsl('#00ff33')!;
+    const white = '#ffffff';
+    const black = '#000000';
+    const green = toOklch('#00ff33');
 
     it('should find a compliant color when lightening is possible', () => {
-      const result = binarySearchContrast(
-        green,
-        black,
-        'lighten',
-        isAAContrast
-      );
+      const result = binarySearchContrast(green, black, 'lighten', isAAContrast);
       expect(result).not.toBe(null);
-      expect(isAAContrast(hslToHex(result!), '#000000')).toBe(true);
+      expect(isAAContrast(oklchToHex(result!), black)).toBe(true);
     });
 
     it('should find a compliant color when darkening is possible', () => {
       const result = binarySearchContrast(green, white, 'darken', isAAContrast);
       expect(result).not.toBe(null);
-      expect(isAAContrast(hslToHex(result!), '#ffffff')).toBe(true);
+      expect(isAAContrast(oklchToHex(result!), white)).toBe(true);
     });
 
     it('should return null when the extreme is already non-compliant', () => {
@@ -158,10 +158,10 @@ describe('helpers', () => {
       );
     });
 
-    it('should terminate for every direction and fixed color', () => {
+    it('should terminate for every direction and fixed color, and only return verified-compliant colors', () => {
       for (let i = 0; i < 200; i++) {
-        const change = hexToHsl(randomColor())!;
-        const fixed = hexToHsl(randomColor())!;
+        const change = toOklch(randomColor());
+        const fixed = randomColor();
         for (const direction of ['lighten', 'darken'] as const) {
           const result = binarySearchContrast(
             change,
@@ -170,10 +170,23 @@ describe('helpers', () => {
             isAAContrast
           );
           if (result !== null) {
-            expect(isAAContrast(hslToHex(result), hslToHex(fixed))).toBe(true);
+            expect(isAAContrast(oklchToHex(result), fixed)).toBe(true);
           }
         }
       }
+    });
+
+    it('should accept a fixed color in any supported CSS format', () => {
+      // The fixed color is passed straight through to contrastFn, so it must
+      // work for every format parseColor supports, not just hex.
+      const result = binarySearchContrast(
+        green,
+        'rgb(0, 0, 0)',
+        'lighten',
+        isAAContrast
+      );
+      expect(result).not.toBe(null);
+      expect(isAAContrast(oklchToHex(result!), '#000000')).toBe(true);
     });
   });
 

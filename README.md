@@ -13,15 +13,15 @@ Utility functions for generating and interacting with colors based on WCAG 2.1
 [enhanced](https://www.w3.org/TR/WCAG21/#contrast-enhanced), and
 [non-text](https://www.w3.org/TR/WCAG21/#non-text-contrast) contrast guidelines.
 
-- **~2.3 KB gzipped**, zero runtime dependencies, fully tree-shakeable
+- **~3.0 KB gzipped**, zero runtime dependencies, fully tree-shakeable
 - **Suggests the nearest compliant color**, not just a pass/fail verdict
 - **Returns `null` for input it cannot parse** — never a false "accessible"
 
 ```ts
 import { suggestAAColorVariant, getContrast } from 'accessible-colors';
 
-suggestAAColorVariant('#00FF33', '#FFFFFF'); // '#008a1c'
-getContrast('#008a1c', '#FFFFFF'); // 4.514 — now AA compliant
+suggestAAColorVariant('#00FF33', '#FFFFFF'); // '#008a17'
+getContrast('#008a17', '#FFFFFF'); // 4.518 — now AA compliant
 ```
 
 ## Contents
@@ -181,11 +181,11 @@ lightness in each direction, then returns whichever result is closer to the
 original. If the color already complies, it is returned unchanged.
 
 ```ts
-const suggestion: string | null = suggestAAColorVariant('#00FF33', '#FFFFFF'); // '#008a1c'
-getContrast('#008a1c', '#FFFFFF'); // 4.514
+const suggestion: string | null = suggestAAColorVariant('#00FF33', '#FFFFFF'); // '#008a17'
+getContrast('#008a17', '#FFFFFF'); // 4.518
 
-suggestAAColorVariant('#00FF33', '#FFFFFF', true); // large text — '#00ac22'
-getContrast('#00ac22', '#FFFFFF'); // 3.033
+suggestAAColorVariant('#00FF33', '#FFFFFF', true); // large text — '#00ad1f'
+getContrast('#00ad1f', '#FFFFFF'); // 3.001
 ```
 
 ### `suggestAAAColorVariant`
@@ -193,11 +193,11 @@ getContrast('#00ac22', '#FFFFFF'); // 3.033
 The same, against WCAG AAA thresholds — 7:1, or 4.5:1 for large text.
 
 ```ts
-const suggestion: string | null = suggestAAAColorVariant('#00FF33', '#FFFFFF'); // '#006815'
-getContrast('#006815', '#FFFFFF'); // 7.021
+const suggestion: string | null = suggestAAAColorVariant('#00FF33', '#FFFFFF'); // '#00680e'
+getContrast('#00680e', '#FFFFFF'); // 7.032
 
-suggestAAAColorVariant('#00FF33', '#FFFFFF', true); // large text — '#008a1c'
-getContrast('#008a1c', '#FFFFFF'); // 4.514
+suggestAAAColorVariant('#00FF33', '#FFFFFF', true); // large text — '#008a17'
+getContrast('#008a17', '#FFFFFF'); // 4.518
 ```
 
 Returns `null` when no compliant variant exists in either direction.
