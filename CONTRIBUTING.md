@@ -36,12 +36,14 @@ These are not style preferences; they are the product.
 dependencies are fine.
 
 **The bundle size budget is enforced.** `npm run size` fails the build above
-2560 B gzip. Size is a core part of the pitch — roughly 2.3 KB against colord's
-2.1 KB, color2k's 2.9 KB and chroma-js's 16.5 KB, with zero dependencies. If a
-change needs the budget raised, say so explicitly in the PR and explain what the
-extra bytes buy. Do not raise it quietly. The budget has been raised once, in
-1.2.0, to accept CSS color format parsing; the reasoning is recorded in
-`scripts/size.js`.
+3200 B gzip. Size is still part of the pitch — roughly 3.0 KB against colord's
+2.1 KB, color2k's 2.9 KB and chroma-js's 16.5 KB, with zero dependencies — but
+it is no longer the smallest option in its class, which was a deliberate
+trade recorded below. If a change needs the budget raised, say so explicitly in
+the PR and explain what the extra bytes buy. Do not raise it quietly. The
+budget has been raised twice: in 1.2.0 for CSS color format parsing, and in
+1.3.0 for the OKLCH perceptual suggestion search; the reasoning for both is
+recorded in `scripts/size.js`.
 
 **Never report a false pass.** This is the one rule that matters most. A
 function that cannot determine an answer must return `null`, never `true`. The

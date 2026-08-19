@@ -1,7 +1,7 @@
-import { hslToHex } from './helpers';
+import { rgbToHex } from './helpers';
 import { parseColor } from './parse';
-import { binarySearchContrast, suggestColorVariant, toHsl } from './suggest';
-import type { HSL } from './types';
+import { binarySearchContrast, suggestColorVariant } from './suggest';
+import { MAX_OKLCH_CHROMA, gamutMapChroma, oklabToRgb, type OKLCH } from './oklch';
 
 /**
  * Color shape types. Note that `HSL` uses the 0-1 range for all three channels,
@@ -320,28 +320,27 @@ const randomColorAtRatio = (
   // Prefer whichever band exists; pick at random when both are available.
   const lighten = canLighten && canDarken ? random() < 0.5 : canLighten;
 
-  // Hue and saturation are free choices; only lightness is constrained. Binary
-  // search converges on the nearest compliant lightness for the chosen hue.
+  // Hue and chroma are free choices; only OKLCH lightness is constrained.
+  // Binary search converges on the nearest compliant lightness for the chosen
+  // hue — see suggest.ts for why OKLCH rather than HSL.
   const meetsRatio = (c1: string, c2: string) => isContrasting(c1, c2, ratio);
-  const backgroundHsl = toHsl(background);
-  if (backgroundHsl === null) {
-    return null;
-  }
 
   for (let attempt = 0; attempt < 8; attempt++) {
-    const seed: HSL = {
-      h: random(),
-      s: random(),
-      l: lighten ? 0 : 1,
+    const seed: OKLCH = {
+      L: lighten ? 0 : 1,
+      C: random() * MAX_OKLCH_CHROMA,
+      H: random(),
     };
     const found = binarySearchContrast(
       seed,
-      backgroundHsl,
+      background,
       lighten ? 'lighten' : 'darken',
       meetsRatio
     );
     if (found !== null) {
-      return hslToHex(found);
+      // Must gamut-map exactly as the search loop did — see the matching
+      // comment in suggest.ts's suggestColorVariant for why.
+      return rgbToHex(oklabToRgb(gamutMapChroma(found.L, found.C, found.H)));
     }
   }
 

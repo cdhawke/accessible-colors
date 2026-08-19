@@ -1,6 +1,13 @@
-import type { HSL } from './types';
-import { hslToHex, rgbToHsl } from './helpers';
 import { parseColor } from './parse';
+import { rgbToHex } from './helpers';
+import {
+  deltaEOK,
+  gamutMapChroma,
+  oklabToOklch,
+  oklabToRgb,
+  rgbToOklab,
+  type OKLCH,
+} from './oklch';
 
 /**
  * Suggestion search: given a color that fails a contrast requirement, find the
@@ -9,49 +16,49 @@ import { parseColor } from './parse';
  * Kept separate from the raw conversions in `helpers.ts` so the module graph
  * stays acyclic — this layer depends on parsing, and parsing depends on the
  * conversions.
+ *
+ * The search walks OKLCH lightness rather than HSL lightness. HSL lightness is
+ * not perceptually uniform: darkening a saturated yellow by a fixed HSL step
+ * shifts it toward olive/brown, and pushing lightness toward either extreme
+ * compresses achievable chroma, washing the color out. OKLCH is designed so
+ * that equal steps in `L` correspond to roughly equal perceived change, which
+ * keeps hue and saturation visually stable across the search.
  */
 
 /**
- * Parse any supported color format into HSL.
- * @param color - a CSS color string
- * @returns the HSL representation, or `null` if the input is not a supported color
- */
-export const toHsl = (color: string): HSL | null => {
-  const rgb = parseColor(color);
-  return rgb === null ? null : rgbToHsl(rgb);
-};
-
-/**
- * binarySearchContrast will run a binary search to find the closest accessible color provided a fixed color,
- * a starting color, and a direction to search in.
- * @param change - the color to change, with the lightness value set to the starting point.
- * @param fixed - the fixed color to use for the contrast ratio calculation.
+ * binarySearchContrast finds the nearest lightness, in OKLCH, at which `change`
+ * meets `contrastFn` against `fixed`, holding chroma and hue fixed except for
+ * gamut mapping.
+ *
+ * @param change - the OKLCH color to change, with `L` set to the starting point.
+ * @param fixed - the fixed color to hold contrast against, as a color string in
+ *   any supported format — passed through to `contrastFn` unmodified.
  * @param direction - the direction to search in, either 'lighten' or 'darken'.
- * @param contrastFn - the contrast function to use to determine if a color is accessible.
- * @param large - whether the text should be considered large, adjusting the contrast ratio requirement to 3:1.
- * @returns the closest accessible color to the starting point.
+ * @param contrastFn - the contrast function used to determine compliance.
+ * @param large - whether to use the large-text contrast requirement.
+ * @returns the nearest compliant OKLCH color, or `null` if the extreme in
+ *   `direction` does not comply either.
  */
 export const binarySearchContrast = (
-  change: HSL,
-  fixed: HSL,
+  change: OKLCH,
+  fixed: string,
   direction: 'lighten' | 'darken',
   contrastFn: (c: string, f: string, l?: boolean) => boolean | null,
   large?: boolean
-) => {
-  const { l, ...hs } = change;
+): OKLCH | null => {
+  const { C, H } = change;
 
-  let max = direction === 'lighten' ? 1 : l;
-  let min = direction === 'lighten' ? l : 0;
+  let max = direction === 'lighten' ? 1 : change.L;
+  let min = direction === 'lighten' ? change.L : 0;
 
-  let minColor: string = hslToHex({ ...hs, l: min });
-  let maxColor: string = hslToHex({ ...hs, l: max });
-  const fixedHex = hslToHex(fixed);
+  const toHex = (L: number) => rgbToHex(oklabToRgb(gamutMapChroma(L, C, H)));
 
-  // If the contrast at the minimum or maximum is unacceptable, then it's not worth
-  // the time to check.
-  if (
-    !contrastFn(direction === 'lighten' ? maxColor : minColor, fixedHex, large)
-  ) {
+  let minColor = toHex(min);
+  let maxColor = toHex(max);
+
+  // If the contrast at the minimum or maximum is unacceptable, then it's not
+  // worth the time to search.
+  if (!contrastFn(direction === 'lighten' ? maxColor : minColor, fixed, large)) {
     return null;
   }
 
@@ -63,9 +70,8 @@ export const binarySearchContrast = (
     prevMax = maxColor;
 
     const adjusted = (min + max) / 2;
-
-    const stringified = hslToHex({ ...hs, l: adjusted });
-    const contrasts = !!contrastFn(stringified, fixedHex, large);
+    const stringified = toHex(adjusted);
+    const contrasts = !!contrastFn(stringified, fixed, large);
 
     // Lightening walks `min` up toward the first compliant lightness; darkening
     // walks `max` down toward it. Either way the compliant bound keeps the
@@ -79,7 +85,7 @@ export const binarySearchContrast = (
     }
   }
 
-  return toHsl(direction === 'lighten' ? maxColor : minColor);
+  return { L: direction === 'lighten' ? max : min, C, H };
 };
 
 /**
@@ -88,7 +94,8 @@ export const binarySearchContrast = (
  * @param colorToKeep - the color to keep.
  * @param compareFn - the contrast function to use to determine if a color is accessible.
  * @param large - whether the text should be considered large, adjusting the contrast ratio requirements.
- * @returns the suggested color variant.
+ * @returns the suggested color variant, `colorToChange` unmodified if it already
+ *   complies, or `null` if no compliant variant exists in either direction.
  */
 export const suggestColorVariant = (
   colorToChange: string,
@@ -99,39 +106,55 @@ export const suggestColorVariant = (
     large?: boolean
   ) => boolean | null,
   large?: boolean
-) => {
-  const hslChange = toHsl(colorToChange);
-  const hslKeep = toHsl(colorToKeep);
-  if (!hslKeep || !hslChange) {
+): string | null => {
+  const rgbChange = parseColor(colorToChange);
+  const rgbKeep = parseColor(colorToKeep);
+  if (rgbChange === null || rgbKeep === null) {
     return null;
   }
   if (compareFn(colorToChange, colorToKeep, large)) {
     return colorToChange;
   }
+
+  const oklabChange = rgbToOklab(rgbChange);
+  const oklchChange = oklabToOklch(oklabChange);
+
   const darker = binarySearchContrast(
-    hslChange,
-    hslKeep,
+    oklchChange,
+    colorToKeep,
     'darken',
     compareFn,
     large
   );
   const lighter = binarySearchContrast(
-    hslChange,
-    hslKeep,
+    oklchChange,
+    colorToKeep,
     'lighten',
     compareFn,
     large
   );
+
+  // Must gamut-map the same way the search loop did (gamutMapChroma), not a
+  // raw OKLCH->OKLab conversion. The loop verifies compliance against
+  // gamut-mapped candidates; converting the un-mapped {L, C, H} here would
+  // return a different, unverified color whenever the original chroma was
+  // out of gamut at the found lightness.
+  const toOklab = (found: OKLCH) => gamutMapChroma(found.L, found.C, found.H);
+  const toHex = (found: OKLCH) => rgbToHex(oklabToRgb(toOklab(found)));
+
   if (darker !== null && lighter !== null) {
-    const darkerDiff = Math.abs(hslChange.l - darker.l);
-    const lighterDiff = Math.abs(hslChange.l - lighter.l);
-    return hslToHex(darkerDiff < lighterDiff ? darker : lighter);
+    // ΔE OK — Euclidean distance in OKLab — approximates perceived difference.
+    // Unlike the HSL lightness gap this replaces, it accounts for hue and
+    // chroma shift as well as lightness, so "nearest" means "closest looking".
+    const darkerDist = deltaEOK(oklabChange, toOklab(darker));
+    const lighterDist = deltaEOK(oklabChange, toOklab(lighter));
+    return toHex(darkerDist < lighterDist ? darker : lighter);
   }
   if (darker === null && lighter !== null) {
-    return hslToHex(lighter);
+    return toHex(lighter);
   }
   if (lighter === null && darker !== null) {
-    return hslToHex(darker);
+    return toHex(darker);
   }
   return null;
 };

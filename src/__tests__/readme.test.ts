@@ -60,17 +60,17 @@ describe('README', () => {
     });
 
     it('should match the suggestion examples', () => {
-      expect(api.suggestAAColorVariant('#00FF33', '#FFFFFF')).toBe('#008a1c');
-      expect(api.getContrast('#008a1c', '#FFFFFF')).toBe(4.514);
+      expect(api.suggestAAColorVariant('#00FF33', '#FFFFFF')).toBe('#008a17');
+      expect(api.getContrast('#008a17', '#FFFFFF')).toBe(4.518);
       expect(api.suggestAAColorVariant('#00FF33', '#FFFFFF', true)).toBe(
-        '#00ac22'
+        '#00ad1f'
       );
-      expect(api.getContrast('#00ac22', '#FFFFFF')).toBe(3.033);
+      expect(api.getContrast('#00ad1f', '#FFFFFF')).toBe(3.001);
 
-      expect(api.suggestAAAColorVariant('#00FF33', '#FFFFFF')).toBe('#006815');
-      expect(api.getContrast('#006815', '#FFFFFF')).toBe(7.021);
+      expect(api.suggestAAAColorVariant('#00FF33', '#FFFFFF')).toBe('#00680e');
+      expect(api.getContrast('#00680e', '#FFFFFF')).toBe(7.032);
       expect(api.suggestAAAColorVariant('#00FF33', '#FFFFFF', true)).toBe(
-        '#008a1c'
+        '#008a17'
       );
     });
 
