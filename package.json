@@ -62,7 +62,8 @@
   },
   "homepage": "https://github.com/cdhawke/accessible-colors#accessible-colors",
   "overrides": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "js-yaml": "^4.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
