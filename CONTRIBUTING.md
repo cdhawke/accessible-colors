@@ -89,7 +89,18 @@ Dependabot opens one grouped PR per week for dev dependencies, majors included.
 This package has zero runtime dependencies, so the whole tree is tooling and it
 is easier to review and land as a single change.
 
-There is one `overrides` entry, for `esbuild`. tsup 8.5.1 depends on
+There are two `overrides` entries.
+
+`js-yaml` is forced to `^4.3.1`. It reaches the tree via
+`jest -> babel-jest -> babel-plugin-istanbul -> @istanbuljs/load-nyc-config`,
+which requests `^3.13.1`. Unpinned, npm resolves 3.15.1, which is clean today
+but is the *exact* patched version for GHSA-5p4m-2wfm-xmqj with no margin, on a
+3.x line that is effectively end-of-life. 4.3.1 is the actively maintained line
+and is patched against every current advisory. Verified compatible rather than
+assumed: `load-nyc-config` calls `js-yaml`'s `.load()`, not the `.safeLoad()`
+that 4.x removed, and parsing a real `.nycrc.yml` under 4.3.1 succeeds.
+
+The second is `esbuild`. tsup 8.5.1 depends on
 `esbuild: ^0.27.0`, but GHSA-g7r4-m6w7-qqqr affects 0.27.3-0.28.0 and is only
 fixed in 0.28.1+, which is outside that range. The override forces 0.28.2. It is
 verified working — build succeeds, bundle output is byte-identical, and the
